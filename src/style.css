@@ -1,0 +1,110 @@
+:root {
+  --brand: #4caf7d;
+  --brand-soft: #eafff2;
+  --ink: #2b3a33;
+  --muted: #7a8a82;
+  --card-radius: 22px;
+  font-family: "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(180deg, #f3fbf6 0%, #ffffff 100%);
+  color: var(--ink);
+  min-height: 100vh;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+.app-main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 16px 18px 48px;
+}
+
+/* 首页模块卡片网格 */
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.module-card {
+  display: block;
+  text-align: left;
+  background: #fff;
+  border-radius: var(--card-radius);
+  padding: 18px;
+  box-shadow: 0 8px 22px rgba(76, 175, 125, 0.12);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  text-decoration: none;
+  color: inherit;
+  border: 2px solid transparent;
+}
+
+.module-card:active {
+  transform: scale(0.97);
+}
+
+.module-card .emoji {
+  font-size: 38px;
+  line-height: 1;
+}
+
+.module-card h3 {
+  margin: 12px 0 6px;
+  font-size: 18px;
+}
+
+.module-card p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* 模块内页通用 */
+.module-page {
+  --accent: var(--brand);
+}
+
+.module-page .back {
+  color: var(--accent);
+  font-size: 15px;
+  padding: 6px 0;
+}
+
+.module-page h2 {
+  margin: 8px 0 4px;
+  font-size: 24px;
+}
+
+.module-page .desc {
+  color: var(--muted);
+  margin: 0 0 18px;
+  font-size: 14px;
+}
+
+/* 通用大按钮 */
+.big-btn {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 16px;
+  padding: 14px 18px;
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 35%, transparent);
+}
