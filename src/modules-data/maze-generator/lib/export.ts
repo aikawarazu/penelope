@@ -1,32 +1,10 @@
-import { buildPdf, type PdfImagePage } from './pdf'
-import { createCanvas, drawMaze, layoutFor, makeStyle, type StyleInput } from './render'
+import { buildPdf, type PdfImagePage } from '@/lib/puzzle/pdf'
+import { canvasToBlob, createCanvas, downloadBlob } from '@/lib/puzzle/download'
+import { drawMaze, layoutFor, makeStyle, type StyleInput } from './render'
 import { renderSvg } from './renderSvg'
 import { PAPERS, type Maze, type OrientationId, type PaperId } from './types'
 
-export function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  setTimeout(() => URL.revokeObjectURL(url), 2000)
-}
-
-export function canvasToBlob(
-  canvas: HTMLCanvasElement,
-  type: string,
-  quality?: number
-): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('画布导出失败'))),
-      type,
-      quality
-    )
-  })
-}
+export { downloadBlob }
 
 async function canvasToJpegBytes(canvas: HTMLCanvasElement, quality = 0.92): Promise<Uint8Array> {
   const blob = await canvasToBlob(canvas, 'image/jpeg', quality)

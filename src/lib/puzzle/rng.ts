@@ -2,7 +2,7 @@ export type Rng = () => number
 
 /**
  * mulberry32：小巧、快速、可复现的 32 位伪随机数发生器。
- * 同一个 seed 必然产出同一串随机数 —— 迷宫可凭种子完美复现。
+ * 同一个 seed 必然产出同一串随机数 —— 题目可凭种子完美复现。
  */
 export function mulberry32(seed: number): Rng {
   let a = seed >>> 0
@@ -35,4 +35,11 @@ export function shuffle<T>(items: T[], rng: Rng): T[] {
     items[j] = tmp
   }
   return items
+}
+
+/** 从数组里随机取 n 个不重复元素 */
+export function pick<T>(items: readonly T[], n: number, rng: Rng): T[] {
+  const pool = items.slice()
+  shuffle(pool, rng)
+  return pool.slice(0, Math.min(n, pool.length))
 }

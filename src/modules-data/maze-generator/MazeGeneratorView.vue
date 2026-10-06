@@ -26,7 +26,7 @@ import {
   exportSvg,
   mazeFileName
 } from './lib/export'
-import { randomSeed } from './lib/rng'
+import { randomSeed } from '@/lib/puzzle/rng'
 
 /* ----------------------------- 可调参数 ----------------------------- */
 

@@ -118,22 +118,13 @@ export const PALETTES: readonly Palette[] = [
 
 /* ------------------------------ 纸张 ------------------------------ */
 
-export type PaperId = 'A4' | 'Letter' | 'A3'
-
-export interface Paper {
-  id: PaperId
-  label: string
-  /** [宽 mm, 高 mm]（纵向） */
-  mm: [number, number]
-}
-
-export const PAPERS: readonly Paper[] = [
-  { id: 'A4', label: 'A4', mm: [210, 297] },
-  { id: 'Letter', label: 'Letter', mm: [215.9, 279.4] },
-  { id: 'A3', label: 'A3', mm: [297, 420] }
-]
-
-export type OrientationId = 'auto' | 'portrait' | 'landscape'
+// 纸张与方向枚举已抽到公共库，这里转出以保持模块内引用路径不变
+export {
+  PAPERS,
+  getPaper,
+  type PaperId,
+  type OrientationId
+} from '@/lib/puzzle/paper'
 
 /* ------------------------------ 尺寸 ------------------------------ */
 

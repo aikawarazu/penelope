@@ -1,4 +1,4 @@
-import { mulberry32, randInt, shuffle } from './rng'
+import { mulberry32, randInt, shuffle } from '@/lib/puzzle/rng'
 import {
   DIRS,
   clampSize,

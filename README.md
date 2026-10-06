@@ -65,6 +65,13 @@ src/
     logic/          # 分分类
     maze/           # 走迷宫（小游戏）
     maze-generator/ # 迷宫生成器（可打印导出）
+    bingo/          # 图形宾果卡
+    find/           # 图形找找看
+    nonogram/       # 数织画
+    sudoku/         # 图形数独
+    jigsaw/         # 拼图
+  lib/
+    puzzle/         # 所有拼图类模块的公共底座
 ```
 
 ## 现有模块
@@ -76,6 +83,28 @@ src/
 | `logic` | 分分类 | 动物 / 水果归类 |
 | `maze` | 走迷宫 | SVG 迷宫，方向键或按钮移动 |
 | `maze-generator` | 迷宫生成器 | 3 种算法 + 5 档难度，导出 PDF（含答案页）/ PNG / SVG |
+| `bingo` | 图形宾果 | 3×3 / 4×4 / 5×5，最多 30 张唯一卡 + 呼叫清单，PDF 每页 1 或 4 张 |
+| `find` | 图形找找看 | 目标图形横 / 竖 / 斜藏进干扰图形里，PDF 含答案页 |
+| `nonogram` | 数织画 | 12 个内置像素图案或自己手绘，自动生成行列线索，PDF 含答案页 |
+| `sudoku` | 图形数独 | 4×4 / 6×6 / 9×9 + 4 档难度，**保证唯一解**，一次可出 9 题 |
+| `jigsaw` | 拼图 | 内置图案 + 6 种外形 + 4~25 片，PDF 打印模板（含涂色版）+ SVG 刀路 |
+
+后 5 个模块都是「**生成器 + 在线可玩**」双形态：既能调参导出打印稿，也能直接在页面上玩（点选 / 拖拽 / 填色）。
+
+### 公共底座 `src/lib/puzzle/`
+
+被所有拼图类模块共用，避免每个模块重写一遍导出逻辑：
+
+| 文件 | 职责 |
+| --- | --- |
+| `rng.ts` | mulberry32 种子随机 —— 相同设置 + 相同种子必然复现同一份题 |
+| `pdf.ts` | 零依赖 PDF 写入器，每页嵌一张 JPEG（/DCTDecode） |
+| `download.ts` | Blob 下载、`canvas.toBlob`、多画布合并成多页 PDF |
+| `paper.ts` | A4 / Letter / A3 尺寸、方向判定、内容铺进可打印区域 |
+| `pictures.ts` | 4 套幼儿图形库（动物 / 水果 / 交通工具 / 生活用品，各 24 个） |
+| `canvas2d.ts` | 圆角矩形、emoji 字体栈、居中文字、颜色插值等绘制辅助 |
+
+界面样式复用 `src/style.css` 里的 `.puzzle-*` 类，新增模块不需要再写一遍 CSS。
 
 ### `maze-generator` 内部结构
 
@@ -92,3 +121,12 @@ src/
 | `pdf.ts` | 零依赖 PDF 写入器，每页嵌一张 JPEG |
 | `export.ts` | PDF（第 1 页题目 + 第 2 页答案）/ PNG / SVG 导出与下载 |
 | `worker.ts` | 大尺寸迷宫放到 Web Worker 生成，避免卡住界面 |
+
+### `bingo` / `find` / `nonogram` / `sudoku` / `jigsaw` 内部结构
+
+5 个模块结构一致：视图组件只负责调参与交互，逻辑全放在各自的 `lib/` 下，方便单独复用或改成别的形态。
+
+- `lib/types.ts` 预设常量（难度、尺寸、图形集）
+- `lib/generate.ts`（或 `sudoku.ts` / `paths.ts`）纯逻辑生成器，无 DOM 依赖，可在 Node 里直接跑测试
+- `lib/render.ts` Canvas 绘制，**预览与导出共用同一套绘制函数**，所见即所得
+- `lib/export.ts` PDF / PNG / SVG 导出，PDF 一般「第 1 页题目 + 第 2 页答案」

@@ -1,7 +1,7 @@
 /**
  * 极简 PDF 写入器：不依赖任何第三方库。
  * 每页就是一张 JPEG（/Filter /DCTDecode），直接嵌进 Image XObject。
- * 足以输出「第 1 页题目 + 第 2 页答案」的打印稿。
+ * 足以输出「题目页 + 答案页」「多张卡片一页」这类打印稿。
  */
 
 export interface PdfImagePage {
@@ -16,7 +16,11 @@ function num(v: number): string {
   return String(Math.round(v * 100) / 100)
 }
 
-export function buildPdf(pages: PdfImagePage[], pageMm: [number, number], marginMm: number): Blob {
+/**
+ * @param pageMm 页面尺寸 [宽 mm, 高 mm]
+ * @param marginMm 页边距（mm），图片会等比缩放并居中放在这个框里
+ */
+export function buildPdf(pages: PdfImagePage[], pageMm: [number, number], marginMm = 0): Blob {
   const mmToPt = 72 / 25.4
   const pageW = pageMm[0] * mmToPt
   const pageH = pageMm[1] * mmToPt
@@ -37,8 +41,8 @@ export function buildPdf(pages: PdfImagePage[], pageMm: [number, number], margin
   push(new Uint8Array([0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a]))
 
   const objectOffsets: number[] = []
-  const count = Math.max(1, pages.length)
-  const pageNums = pages.map((_, i) => 3 + i * 3)
+  const list = pages.length ? pages : [{ bytes: new Uint8Array([0xff, 0xd8, 0xff, 0xd9]), width: 1, height: 1 }]
+  const pageNums = list.map((_, i) => 3 + i * 3)
 
   const begin = (objNum: number, body: string) => {
     objectOffsets[objNum] = offset
@@ -51,7 +55,7 @@ export function buildPdf(pages: PdfImagePage[], pageMm: [number, number], margin
     `<< /Type /Pages /Kids [${pageNums.map((n) => `${n} 0 R`).join(' ')}] /Count ${pageNums.length} >>`
   )
 
-  pages.forEach((page, i) => {
+  list.forEach((page, i) => {
     const pageNum = pageNums[i]
     const contentNum = pageNum + 1
     const imageNum = pageNum + 2
@@ -70,7 +74,9 @@ export function buildPdf(pages: PdfImagePage[], pageMm: [number, number], margin
     )
 
     objectOffsets[contentNum] = offset
-    push(`${contentNum} 0 obj\n<< /Length ${encoder.encode(content).length} >>\nstream\n${content}endstream\nendobj\n`)
+    push(
+      `${contentNum} 0 obj\n<< /Length ${encoder.encode(content).length} >>\nstream\n${content}endstream\nendobj\n`
+    )
 
     objectOffsets[imageNum] = offset
     push(
@@ -81,7 +87,7 @@ export function buildPdf(pages: PdfImagePage[], pageMm: [number, number], margin
     push('\nendstream\nendobj\n')
   })
 
-  const size = 2 + count * 3 + 1
+  const size = 2 + list.length * 3 + 1
   const xrefOffset = offset
   let xref = `xref\n0 ${size}\n0000000000 65535 f \n`
   for (let i = 1; i < size; i++) {

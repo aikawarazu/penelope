@@ -133,10 +133,3 @@ export function drawMaze(
 
   ctx.restore()
 }
-
-export function createCanvas(width: number, height: number): HTMLCanvasElement {
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.max(1, Math.ceil(width))
-  canvas.height = Math.max(1, Math.ceil(height))
-  return canvas
-}
