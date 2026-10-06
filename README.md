@@ -63,7 +63,8 @@ src/
     science/        # 科普（SVG 幻灯片）
     math/           # 数一数
     logic/          # 分分类
-    maze/           # 走迷宫
+    maze/           # 走迷宫（小游戏）
+    maze-generator/ # 迷宫生成器（可打印导出）
 ```
 
 ## 现有模块
@@ -74,3 +75,20 @@ src/
 | `math` | 数一数 | 1~5 的数量认知，点选作答 |
 | `logic` | 分分类 | 动物 / 水果归类 |
 | `maze` | 走迷宫 | SVG 迷宫，方向键或按钮移动 |
+| `maze-generator` | 迷宫生成器 | 3 种算法 + 5 档难度，导出 PDF（含答案页）/ PNG / SVG |
+
+### `maze-generator` 内部结构
+
+迷宫相关的全部逻辑都在 `src/modules-data/maze-generator/lib/` 下，与 UI 解耦，可单独复用：
+
+| 文件 | 职责 |
+| --- | --- |
+| `rng.ts` | mulberry32 种子随机 —— 相同设置 + 相同种子必然复现同一张迷宫 |
+| `generate.ts` | 递归回溯 / 随机化 Prim / 随机化 Kruskal 三种生成算法 + 编织（按比率打通死角） |
+| `solve.ts` | BFS 求最短通路、统计死角数 |
+| `geometry.ts` | 把墙体抽成去重线段，并留出起点入口 / 终点出口开口 |
+| `render.ts` | Canvas 绘制（预览、PNG、PDF 共用同一套几何） |
+| `renderSvg.ts` | 矢量 SVG 输出，全部墙体合并为单条 path |
+| `pdf.ts` | 零依赖 PDF 写入器，每页嵌一张 JPEG |
+| `export.ts` | PDF（第 1 页题目 + 第 2 页答案）/ PNG / SVG 导出与下载 |
+| `worker.ts` | 大尺寸迷宫放到 Web Worker 生成，避免卡住界面 |
