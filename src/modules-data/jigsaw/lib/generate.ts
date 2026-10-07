@@ -1,5 +1,6 @@
-import { mulberry32, randInt, shuffle } from '@/lib/puzzle/rng'
+import { mulberry32, shuffle } from '@/lib/puzzle/rng'
 import { outlinePath, piecePath, shapeCoversCorner, type ShapeId } from './paths'
+import { artById, type ArtKind } from './pictures'
 
 export interface JigsawPiece {
   index: number
@@ -15,28 +16,14 @@ export interface JigsawSpec {
   rows: number
   cols: number
   shape: ShapeId
+  /** 图案内容：drawn 时是绘制类型，emoji 时是字符 */
   art: string
+  artKind: ArtKind
   artLabel: string
   pieces: JigsawPiece[]
   outline: string
   seed: number
 }
-
-export interface ArtOption {
-  emoji: string
-  label: string
-}
-
-export const ARTS: readonly ArtOption[] = [
-  { emoji: '🐱', label: '小猫' },
-  { emoji: '🚀', label: '火箭' },
-  { emoji: '🌈', label: '彩虹' },
-  { emoji: '🎈', label: '气球' },
-  { emoji: '🌻', label: '向日葵' },
-  { emoji: '🦋', label: '蝴蝶' },
-  { emoji: '🐟', label: '小鱼' },
-  { emoji: '🍉', label: '西瓜' }
-]
 
 export interface PieceCountOption {
   label: string
@@ -62,9 +49,21 @@ export interface JigsawOptions {
   seed: number
 }
 
-/** 判断碎片中心是否落在外形内（外形外的碎片不生成） */
-export function pieceInside(shape: ShapeId, cx: number, cy: number): boolean {
-  return shapeCoversCorner(shape, cx, cy)
+/**
+ * 判断某格是否要保留：在格子里取 3×3 共 9 个采样点，
+ * 只要有一点落在外形内就保留 —— 否则异形拼图会在边缘留下缺口。
+ */
+export function pieceInside(shape: ShapeId, cols: number, rows: number, r: number, c: number): boolean {
+  const cw = 1 / cols
+  const ch = 1 / rows
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      const u = (c + (i + 0.5) / 3) * cw
+      const v = (r + (j + 0.5) / 3) * ch
+      if (shapeCoversCorner(shape, u, v)) return true
+    }
+  }
+  return false
 }
 
 export function buildSpec(options: JigsawOptions): JigsawSpec {
@@ -75,7 +74,7 @@ export function buildSpec(options: JigsawOptions): JigsawSpec {
     for (let c = 0; c < cols; c++) {
       const cx = (c + 0.5) / cols
       const cy = (r + 0.5) / rows
-      if (!pieceInside(shape, cx, cy)) continue
+      if (!pieceInside(shape, cols, rows, r, c)) continue
       pieces.push({
         index: pieces.length,
         r,
@@ -92,12 +91,13 @@ export function buildSpec(options: JigsawOptions): JigsawSpec {
     }
   }
 
-  const art = ARTS.find((a) => a.emoji === options.art) ?? ARTS[0]
+  const art = artById(options.art)
   return {
     rows,
     cols,
     shape,
-    art: art.emoji,
+    art: art.value,
+    artKind: art.kind,
     artLabel: art.label,
     pieces,
     outline: outlinePath(shape),
@@ -105,18 +105,38 @@ export function buildSpec(options: JigsawOptions): JigsawSpec {
   }
 }
 
-/** 打乱碎片初始摆放位置，返回每块的左上角（拼图归一化坐标，允许超出 0~1） */
+/**
+ * 碎片初始摆放：在台面上按网格均匀摊开 + 轻微抖动。
+ * 用种子驱动，所以同一个种子每次摆法一致（也方便自动化测试）。
+ * 返回每块碎片左上角在台面上的像素坐标。
+ */
 export function scatterPieces(
   spec: JigsawSpec,
+  board: number,
+  pieceSize: number,
   seed: number
 ): { index: number; x: number; y: number }[] {
+  const count = spec.pieces.length
+  if (!count) return []
   const rng = mulberry32(seed + 13)
-  return shuffle(
-    spec.pieces.map((p) => ({
-      index: p.index,
-      x: randInt(rng, 40) / 100,
-      y: randInt(rng, 40) / 100
-    })),
+  const order = shuffle(
+    spec.pieces.map((p) => p.index),
     rng
   )
+
+  const cols = Math.max(1, Math.round(Math.sqrt(count)))
+  const rows = Math.ceil(count / cols)
+  const spanX = Math.max(0, board - pieceSize)
+  const spanY = Math.max(0, board - pieceSize)
+  const stepX = cols > 1 ? spanX / (cols - 1) : 0
+  const stepY = rows > 1 ? spanY / (rows - 1) : 0
+  const jitter = Math.min(stepX, stepY) * 0.18
+
+  return order.map((index, slot) => {
+    const c = slot % cols
+    const r = Math.floor(slot / cols)
+    const x = Math.min(spanX, Math.max(0, c * stepX + (rng() - 0.5) * jitter))
+    const y = Math.min(spanY, Math.max(0, r * stepY + (rng() - 0.5) * jitter))
+    return { index, x, y }
+  })
 }

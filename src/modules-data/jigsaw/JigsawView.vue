@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-import { randomSeed, shuffle, mulberry32 } from '@/lib/puzzle/rng'
+import { randomSeed } from '@/lib/puzzle/rng'
 import { PAPERS, type PaperId } from '@/lib/puzzle/paper'
 import { downloadBlob } from '@/lib/puzzle/download'
-import { ARTS, PIECE_COUNTS, buildSpec, type JigsawSpec } from './lib/generate'
+import { PIECE_COUNTS, buildSpec, scatterPieces, type JigsawSpec } from './lib/generate'
+import { ARTS } from './lib/pictures'
 import { SHAPES, type ShapeId } from './lib/paths'
 import {
   buildPieceSprites,
@@ -22,7 +23,7 @@ const accent = '#22b8a6'
 const mode = ref<'play' | 'template'>('play')
 const shape = ref<ShapeId>('heart')
 const pieceIndex = ref(2)
-const art = ref(ARTS[0].emoji)
+const art = ref(ARTS[0].id)
 const lineWidth = ref(0.09)
 const showOutline = ref(true)
 const withBlankPage = ref(true)
@@ -109,22 +110,27 @@ function targetOf(index: number) {
 function resetPlay() {
   const s = spec.value
   if (!s) return
-  const rng = mulberry32(seed.value + 13)
-  const order = shuffle(
-    s.pieces.map((p) => p.index),
-    rng
-  )
-  const maxX = Math.max(4, BOARD - sprite.value.w)
-  const maxY = Math.max(4, BOARD - sprite.value.h)
-  pieces.value = order.map((index) => ({
-    index,
-    x: rng() * maxX,
-    y: rng() * maxY,
+  pieces.value = scatterPieces(s, BOARD, sprite.value.w, seed.value).map((p) => ({
+    index: p.index,
+    x: p.x,
+    y: p.y,
     placed: false
   }))
   dragging.value = -1
   elapsed.value = 0
   stopTimer()
+}
+
+/** 把还没拼上的碎片重新摊开，避免互相压住找不到 */
+function spreadOut() {
+  const s = spec.value
+  if (!s) return
+  const placed = pieces.value.filter((p) => p.placed)
+  const placedIdx = new Set(placed.map((p) => p.index))
+  const loose = scatterPieces(s, BOARD, sprite.value.w, seed.value + placed.length * 31)
+    .filter((p) => !placedIdx.has(p.index))
+    .map((p) => ({ index: p.index, x: p.x, y: p.y, placed: false }))
+  pieces.value = [...placed, ...loose]
 }
 
 function startTimer() {
@@ -323,14 +329,14 @@ onBeforeUnmount(stopTimer)
         <div class="puzzle-swatches">
           <button
             v-for="a in ARTS"
-            :key="a.emoji"
-            class="puzzle-swatch"
-            style="font-size: 20px; background: #f6faf8"
-            :class="{ on: art === a.emoji }"
+            :key="a.id"
+            class="puzzle-swatch puzzle-art"
+            :class="{ on: art === a.id }"
             :title="a.label"
-            @click="art = a.emoji"
+            @click="art = a.id"
           >
-            {{ a.emoji }}
+            <template v-if="a.kind === 'emoji'">{{ a.value }}</template>
+            <template v-else>{{ a.label }}</template>
           </button>
         </div>
       </div>
@@ -428,6 +434,7 @@ onBeforeUnmount(stopTimer)
 
       <div class="puzzle-actions">
         <button class="big-btn" @click="regenerate">重新打乱</button>
+        <button class="puzzle-ghost" @click="spreadOut">摊开碎片</button>
         <button class="puzzle-ghost" :disabled="exporting === 'pdf'" @click="onPdf">
           {{ exporting === 'pdf' ? '导出中…' : 'PDF' }}
         </button>
@@ -442,3 +449,17 @@ onBeforeUnmount(stopTimer)
     </section>
   </div>
 </template>
+
+<style scoped>
+/* 图案选择：矢量图案显示名字，emoji 图案直接显示图形 */
+.puzzle-art {
+  width: auto;
+  min-width: 44px;
+  height: 32px;
+  padding: 0 8px;
+  font-size: 14px;
+  background: #f6faf8;
+  border-radius: 10px;
+  border: 2px solid transparent;
+}
+</style>

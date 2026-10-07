@@ -6,10 +6,12 @@ export const router = createRouter({
   routes: [
     { path: '/', name: 'home', component: HomeView },
     {
-      path: '/m/:id',
+      // 模块路由统一走这一个入口，具体组件由 registry 动态解析。
+      // 末尾的 rest 交给模块自己当子路由用（例如 /m/science/album/plants）。
+      path: '/m/:id/:rest(.*)?',
       name: 'module',
-      // 模块路由统一走这一个入口，具体组件由 registry 动态解析
       component: () => import('@/views/ModuleView.vue')
-    }
+    },
+    { path: '/:pathMatch(.*)*', redirect: '/' }
   ]
 })

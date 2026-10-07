@@ -92,9 +92,10 @@ export function exportJigsawSvg(spec: JigsawSpec, opts: JigsawDrawOptions): Blob
   parts.push(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${side}" height="${side}" viewBox="0 0 ${side} ${side}">`
   )
-  if (opts.showArt) {
+  // SVG 主要用作切割模板；矢量绘制的图案不便转成路径，只在 emoji 图案时带上参考图
+  if (opts.showArt && spec.artKind === 'emoji') {
     parts.push(
-      `<text x="${n(side / 2)}" y="${n(side / 2)}" font-size="${n(side * 0.74)}" text-anchor="middle" dominant-baseline="central">${spec.art}</text>`
+      `<text x="${n(side / 2)}" y="${n(side / 2)}" font-size="${n(side * 0.78)}" text-anchor="middle" dominant-baseline="central">${spec.art}</text>`
     )
   }
   parts.push(

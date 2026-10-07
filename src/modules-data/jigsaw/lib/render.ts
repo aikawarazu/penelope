@@ -1,6 +1,7 @@
 import { createCanvas } from '@/lib/puzzle/download'
-import { drawEmoji, withAlpha, type Ctx } from '@/lib/puzzle/canvas2d'
-import type { JigsawSpec } from './generate'
+import { withAlpha, type Ctx } from '@/lib/puzzle/canvas2d'
+import { drawSpecArt } from './pictures'
+import type { JigsawPiece, JigsawSpec } from './generate'
 
 export interface AreaBox {
   x: number
@@ -69,7 +70,7 @@ export function drawJigsawTemplate(
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(x, y, side, side)
   if (opts.showArt) {
-    drawEmoji(ctx, spec.art, x + side / 2, y + side / 2, side * 0.74)
+    drawSpecArt(ctx, spec.art, spec.artKind, x + side / 2, y + side / 2, side * 0.78)
   }
   ctx.restore()
 
@@ -79,12 +80,7 @@ export function drawJigsawTemplate(
   ctx.lineJoin = 'round'
   ctx.lineCap = 'round'
   for (const piece of spec.pieces) {
-    const p = new Path2D(piece.path)
-    const mtx = new DOMMatrix()
-      .translate(x + m.offX + piece.c * m.cell, y + m.offY + piece.r * m.cell)
-      .scale(m.cell, m.cell)
-    p.addPath(p, mtx)
-    ctx.stroke(p)
+    ctx.stroke(piecePathInBox(m, piece, x, y))
   }
 
   if (opts.showOutline) {
@@ -94,6 +90,18 @@ export function drawJigsawTemplate(
   }
 
   ctx.restore()
+}
+
+/** 把碎片刀路（格子局部 0~1）变换到整幅拼图的坐标系里，可再整体平移 dx/dy */
+function piecePathInBox(m: GridMetrics, piece: JigsawPiece, dx = 0, dy = 0): Path2D {
+  const out = new Path2D()
+  out.addPath(
+    new Path2D(piece.path),
+    new DOMMatrix()
+      .translate(dx + m.offX + piece.c * m.cell, dy + m.offY + piece.r * m.cell)
+      .scale(m.cell, m.cell)
+  )
+  return out
 }
 
 /**
@@ -118,33 +126,25 @@ export function buildPieceSprites(
     if (!ctx) return canvas
     ctx.scale(dpr, dpr)
     ctx.translate(pad, pad)
+    // 关键：把「这块碎片所在的格子」平移到精灵图原点，
+    // 否则整幅图会按绝对坐标绘制，除左上角外的碎片都会被画到画布外面去。
+    ctx.translate(-(m.offX + piece.c * m.cell), -(m.offY + piece.r * m.cell))
 
     // 先把整幅图画上去，再用碎片路径裁剪
     ctx.save()
-    const clip = new Path2D(piece.path)
-    const mtx = new DOMMatrix()
-      .translate(m.offX + piece.c * m.cell, m.offY + piece.r * m.cell)
-      .scale(m.cell, m.cell)
-    clip.addPath(clip, mtx)
-    ctx.clip(clip)
+    ctx.clip(piecePathInBox(m, piece))
 
     ctx.save()
     ctx.clip(shape)
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, side, side)
-    if (opts.showArt) drawEmoji(ctx, spec.art, side / 2, side / 2, side * 0.74)
+    if (opts.showArt) drawSpecArt(ctx, spec.art, spec.artKind, side / 2, side / 2, side * 0.78)
     ctx.restore()
 
     ctx.restore()
 
     // 描边
-    const outline = new Path2D(piece.path)
-    outline.addPath(
-      outline,
-      new DOMMatrix()
-        .translate(m.offX + piece.c * m.cell, m.offY + piece.r * m.cell)
-        .scale(m.cell, m.cell)
-    )
+    const outline = piecePathInBox(m, piece)
     ctx.strokeStyle = opts.ink
     ctx.lineWidth = Math.max(1, m.cell * opts.lineWidth)
     ctx.lineJoin = 'round'
