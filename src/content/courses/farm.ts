@@ -1,15 +1,18 @@
-import type { Album } from '../types'
+import type { Course } from '../types'
 
-/** 专辑：农场小伙伴 */
-const album: Album = {
+/** 课程：农场小伙伴（图卡集） */
+const course: Course = {
   id: 'farm',
   title: '农场小伙伴',
   subtitle: '鸭子、兔子和奶牛',
   category: 'animals',
   cover: '🐾',
   accent: '#ff8f6b',
-  order: 3,
-  cards: [
+  kind: 'gallery',
+  order: 4,
+  age: '3-5 岁',
+  intro: '农场里有好多动物朋友，它们长得不一样，本领也不一样。',
+  steps: [
     {
       id: 'duck',
       title: '小鸭子',
@@ -56,7 +59,8 @@ const album: Album = {
         <ellipse cx="140" cy="70" rx="12" ry="9" fill="#ff8f6b"/>
       </svg>`
     }
-  ]
+  ],
+  summary: '小鸭子会游泳，小兔子耳朵长，奶牛给我们牛奶。每个小伙伴都有自己的本领。'
 }
 
-export default album
+export default course

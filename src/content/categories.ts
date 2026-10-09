@@ -5,6 +5,7 @@ import type { Category } from './types'
  * 然后把专辑的 category 指向它的 id 即可。
  */
 export const CATEGORIES: readonly Category[] = [
+  { id: 'food', label: '食物', emoji: '🥛', accent: '#22b8a6' },
   { id: 'nature', label: '自然', emoji: '🌿', accent: '#4caf7d' },
   { id: 'weather', label: '天气', emoji: '☁️', accent: '#3fa7ff' },
   { id: 'animals', label: '动物', emoji: '🐾', accent: '#ff8f6b' },

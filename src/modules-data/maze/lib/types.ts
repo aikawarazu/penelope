@@ -105,15 +105,17 @@ export interface Palette {
   solution: string
   start: string
   end: string
+  /** 在线玩时那颗小球的配色 */
+  ball: string
 }
 
 export const PALETTES: readonly Palette[] = [
-  { id: 'classic', label: '经典黑白', wall: '#111111', bg: '#ffffff', solution: '#e11d48', start: '#16a34a', end: '#dc2626' },
-  { id: 'ocean', label: '海洋', wall: '#1d4ed8', bg: '#eff6ff', solution: '#f97316', start: '#0ea5e9', end: '#1d4ed8' },
-  { id: 'forest', label: '森林', wall: '#166534', bg: '#f0fdf4', solution: '#f59e0b', start: '#22c55e', end: '#15803d' },
-  { id: 'sunset', label: '暖阳', wall: '#b45309', bg: '#fffbeb', solution: '#2563eb', start: '#f59e0b', end: '#b45309' },
-  { id: 'violet', label: '紫罗兰', wall: '#6d28d9', bg: '#f5f3ff', solution: '#f43f5e', start: '#8b5cf6', end: '#6d28d9' },
-  { id: 'slate', label: '石板', wall: '#334155', bg: '#f8fafc', solution: '#0ea5e9', start: '#64748b', end: '#0f172a' }
+  { id: 'classic', label: '经典黑白', wall: '#111111', bg: '#ffffff', solution: '#e11d48', start: '#16a34a', end: '#dc2626', ball: '#3b82f6' },
+  { id: 'ocean', label: '海洋', wall: '#1d4ed8', bg: '#eff6ff', solution: '#f97316', start: '#0ea5e9', end: '#1d4ed8', ball: '#f97316' },
+  { id: 'forest', label: '森林', wall: '#166534', bg: '#f0fdf4', solution: '#f59e0b', start: '#22c55e', end: '#15803d', ball: '#f59e0b' },
+  { id: 'sunset', label: '暖阳', wall: '#b45309', bg: '#fffbeb', solution: '#2563eb', start: '#f59e0b', end: '#b45309', ball: '#2563eb' },
+  { id: 'violet', label: '紫罗兰', wall: '#6d28d9', bg: '#f5f3ff', solution: '#f43f5e', start: '#8b5cf6', end: '#6d28d9', ball: '#f43f5e' },
+  { id: 'slate', label: '石板', wall: '#334155', bg: '#f8fafc', solution: '#0ea5e9', start: '#64748b', end: '#0f172a', ball: '#0ea5e9' }
 ]
 
 /* ------------------------------ 纸张 ------------------------------ */

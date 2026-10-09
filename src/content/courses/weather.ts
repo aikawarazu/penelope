@@ -1,15 +1,18 @@
-import type { Album } from '../types'
+import type { Course } from '../types'
 
-/** 专辑：天空的秘密 */
-const album: Album = {
+/** 课程：天空的秘密（图卡集） */
+const course: Course = {
   id: 'weather',
   title: '天空的秘密',
   subtitle: '太阳、雨、彩虹和雪花',
   category: 'weather',
   cover: '☁️',
   accent: '#3fa7ff',
-  order: 2,
-  cards: [
+  kind: 'gallery',
+  order: 3,
+  age: '3-5 岁',
+  intro: '太阳、雨、彩虹、雪花，都是天上的小变化。我们一个一个认识它们。',
+  steps: [
     {
       id: 'sun',
       title: '太阳公公',
@@ -78,7 +81,8 @@ const album: Album = {
         </g>
       </svg>`
     }
-  ]
+  ],
+  summary: '太阳给光和热，雨水喂饱泥土，雨后会出现彩虹，天冷时飘下雪花。'
 }
 
-export default album
+export default course

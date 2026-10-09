@@ -1,15 +1,18 @@
-import type { Album } from '../types'
+import type { Course } from '../types'
 
-/** 专辑：认识我自己 */
-const album: Album = {
+/** 课程：认识我自己（图卡集） */
+const course: Course = {
   id: 'body',
   title: '认识我自己',
   subtitle: '小手、牙齿和眼睛',
   category: 'body',
   cover: '🦷',
   accent: '#f5a524',
-  order: 4,
-  cards: [
+  kind: 'gallery',
+  order: 5,
+  age: '3-5 岁',
+  intro: '我们的身体很厉害：小手能做事情，牙齿能咬碎食物，眼睛能看见世界。',
+  steps: [
     {
       id: 'hands',
       title: '小小手',
@@ -47,7 +50,8 @@ const album: Album = {
         <path d="M44 60 C60 30 140 30 156 60" fill="none" stroke="#cfe0d7" stroke-width="4" stroke-linecap="round"/>
       </svg>`
     }
-  ]
+  ],
+  summary: '小手、牙齿、眼睛，都是身体的好帮手，要好好保护它们。'
 }
 
-export default album
+export default course

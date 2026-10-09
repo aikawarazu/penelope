@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { ALL_CATEGORY_ID, categoryLabel } from '@/content/categories'
-import { albumsOf, cardCount, totalAlbums, totalCards, usedCategories } from '@/content/registry'
+import { coursesOf, stepCount, totalCourses, totalSteps, usedCategories } from '@/content/registry'
 import { getProgress } from '@/content/progress'
 import { libraryModules, toolModules } from '@/modules/registry'
 
@@ -13,16 +13,16 @@ const chips = computed(() => [
   ...usedCategories.map((c) => ({ id: c.id, label: c.label, emoji: c.emoji }))
 ])
 
-const HOME_ALBUM_LIMIT = 6
-const visibleAlbums = computed(() => albumsOf(category.value).slice(0, HOME_ALBUM_LIMIT))
-const remaining = computed(() => Math.max(0, albumsOf(category.value).length - HOME_ALBUM_LIMIT))
+const HOME_LIMIT = 6
+const visibleCourses = computed(() => coursesOf(category.value).slice(0, HOME_LIMIT))
+const remaining = computed(() => Math.max(0, coursesOf(category.value).length - HOME_LIMIT))
 
-function readCount(albumId: string) {
-  return getProgress(albumId).read.length
+function readCount(courseId: string) {
+  return getProgress(courseId).read.length
 }
 
-function albumHref(albumId: string) {
-  return library.value ? `/m/${library.value.id}/album/${albumId}` : '/'
+function courseHref(courseId: string) {
+  return library.value ? `/m/${library.value.id}/course/${courseId}` : '/'
 }
 </script>
 
@@ -31,8 +31,8 @@ function albumHref(albumId: string) {
     <h1>佩佩启蒙乐园</h1>
     <p>一针一线耐心编织，陪宝宝一点点认识世界。</p>
     <div class="home-stats">
-      <span><b>{{ totalAlbums }}</b> 本专辑</span>
-      <span><b>{{ totalCards }}</b> 张卡片</span>
+      <span><b>{{ totalCourses }}</b> 门课</span>
+      <span><b>{{ totalSteps }}</b> 个步骤</span>
       <span><b>{{ toolModules.length }}</b> 个玩法</span>
     </div>
   </section>
@@ -57,25 +57,26 @@ function albumHref(albumId: string) {
 
     <div class="home-grid">
       <router-link
-        v-for="a in visibleAlbums"
-        :key="a.id"
-        class="home-album"
-        :style="{ borderColor: a.accent }"
-        :to="albumHref(a.id)"
+        v-for="c in visibleCourses"
+        :key="c.id"
+        class="home-course"
+        :style="{ borderColor: c.accent }"
+        :to="courseHref(c.id)"
       >
-        <span class="home-album-cover" :style="{ background: a.accent + '1f' }">{{ a.cover }}</span>
-        <span class="home-album-title">{{ a.title }}</span>
-        <span class="home-album-foot">
-          <span class="home-tag" :style="{ color: a.accent, borderColor: a.accent + '55' }">
-            {{ categoryLabel(a.category) }}
+        <span class="home-course-cover" :style="{ background: c.accent + '1f' }">{{ c.cover }}</span>
+        <span class="home-course-title">{{ c.title }}</span>
+        <span class="home-course-sub">{{ c.subtitle }}</span>
+        <span class="home-course-foot">
+          <span class="home-tag" :style="{ color: c.accent, borderColor: c.accent + '55' }">
+            {{ categoryLabel(c.category) }}
           </span>
-          <span class="home-album-count">{{ readCount(a.id) }}/{{ cardCount(a) }} 张</span>
+          <span class="home-course-count">{{ readCount(c.id) }}/{{ stepCount(c) }} 步</span>
         </span>
       </router-link>
     </div>
 
-    <p v-if="remaining" class="home-note">还有 {{ remaining }} 本，点右上角「查看全部」</p>
-    <p v-if="!visibleAlbums.length" class="home-note">这个分类还没有专辑～</p>
+    <p v-if="remaining" class="home-note">还有 {{ remaining }} 门，点右上角「查看全部」</p>
+    <p v-if="!visibleCourses.length" class="home-note">这个分类还没有课程～</p>
   </section>
 
   <section v-if="toolModules.length" class="home-section">
@@ -185,14 +186,14 @@ function albumHref(albumId: string) {
 
 .home-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(152px, 1fr));
   gap: 14px;
 }
 
-.home-album {
+.home-course {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
   padding: 14px;
   border-radius: 18px;
   background: #fff;
@@ -203,11 +204,11 @@ function albumHref(albumId: string) {
   transition: transform 0.15s ease;
 }
 
-.home-album:active {
+.home-course:active {
   transform: scale(0.97);
 }
 
-.home-album-cover {
+.home-course-cover {
   height: 72px;
   display: grid;
   place-items: center;
@@ -215,16 +216,23 @@ function albumHref(albumId: string) {
   font-size: 32px;
 }
 
-.home-album-title {
+.home-course-title {
   font-size: 15px;
   font-weight: 700;
 }
 
-.home-album-foot {
+.home-course-sub {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.home-course-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
+  margin-top: 2px;
 }
 
 .home-tag {
@@ -234,7 +242,7 @@ function albumHref(albumId: string) {
   border: 1px solid #d8e6de;
 }
 
-.home-album-count {
+.home-course-count {
   font-size: 11px;
   color: var(--muted);
 }

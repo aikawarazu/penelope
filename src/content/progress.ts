@@ -1,18 +1,20 @@
 /**
- * 阅读进度：记住每个专辑看到第几张、哪些卡片看过。
- * 存在 localStorage，换设备不保留也可正常使用。
+ * 学习进度：记住每门课学到第几步、看过哪些步骤、小问答答得怎么样。
+ * 存在 localStorage，换设备不保留也能正常使用。
  */
 
-const KEY = 'penelope:progress:v1'
+const KEY = 'penelope:progress:v2'
 
-export interface AlbumProgress {
-  /** 上次看到的卡片下标 */
-  lastCard: number
-  /** 已经看过的卡片 id */
+export interface CourseProgress {
+  /** 上次看到的步骤下标 */
+  lastStep: number
+  /** 已经看过的步骤 id */
   read: string[]
+  /** 小问答作答：步骤 id → 选中的选项下标 */
+  quiz: Record<string, number>
 }
 
-type ProgressMap = Record<string, AlbumProgress>
+type ProgressMap = Record<string, CourseProgress>
 
 function readAll(): ProgressMap {
   try {
@@ -33,17 +35,30 @@ function writeAll(map: ProgressMap): void {
   }
 }
 
-export function getProgress(albumId: string): AlbumProgress {
-  return readAll()[albumId] ?? { lastCard: 0, read: [] }
+export function getProgress(courseId: string): CourseProgress {
+  const found = readAll()[courseId]
+  return {
+    lastStep: found?.lastStep ?? 0,
+    read: found?.read ?? [],
+    quiz: found?.quiz ?? {}
+  }
 }
 
-export function markRead(albumId: string, cardId: string, cardIndex: number): void {
+export function markRead(courseId: string, stepId: string, stepIndex: number): void {
   const map = readAll()
-  const cur = map[albumId] ?? { lastCard: 0, read: [] }
-  map[albumId] = {
-    lastCard: cardIndex,
-    read: cur.read.includes(cardId) ? cur.read : [...cur.read, cardId]
+  const cur = map[courseId] ?? { lastStep: 0, read: [], quiz: {} }
+  map[courseId] = {
+    lastStep: stepIndex,
+    read: cur.read.includes(stepId) ? cur.read : [...cur.read, stepId],
+    quiz: cur.quiz
   }
+  writeAll(map)
+}
+
+export function markQuiz(courseId: string, stepId: string, choice: number): void {
+  const map = readAll()
+  const cur = map[courseId] ?? { lastStep: 0, read: [], quiz: {} }
+  map[courseId] = { ...cur, quiz: { ...cur.quiz, [stepId]: choice } }
   writeAll(map)
 }
 

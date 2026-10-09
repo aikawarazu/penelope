@@ -1,46 +1,51 @@
 import { ALL_CATEGORY_ID, CATEGORIES, getCategory } from './categories'
-import type { Album, Card, Category } from './types'
+import type { Category, Course, Step } from './types'
 
 /**
- * 自动发现所有专辑：扫描 src/content/albums/*.ts。
- * 新增 / 删除专辑只需增删文件，这里与页面都不用改。
+ * 自动发现所有课程：扫描 src/content/courses/*.ts。
+ * 新增 / 删除课程只需增删文件，这里与页面都不用改。
  */
-const discovered = import.meta.glob<{ default: Album }>('./albums/*.ts', { eager: true })
+const discovered = import.meta.glob<{ default: Course }>('./courses/*.ts', { eager: true })
 
-function isValid(album: Album | undefined): album is Album {
-  return Boolean(album && album.id && album.cards?.length && album.category)
+function isValid(course: Course | undefined): course is Course {
+  return Boolean(course && course.id && course.steps?.length && course.category)
 }
 
-export const albums: Album[] = Object.values(discovered)
+export const courses: Course[] = Object.values(discovered)
   .map((mod) => mod?.default)
   .filter(isValid)
   .sort((a, b) => (a.order ?? 999) - (b.order ?? 999) || a.id.localeCompare(b.id))
 
-/** 专辑里出现过的分类（按分类表顺序），便于只展示有内容的分类 */
+/** 课程里出现过的分类（按分类表顺序），便于只展示有内容的分类 */
 export const usedCategories: Category[] = CATEGORIES.filter((c) =>
-  albums.some((a) => a.category === c.id)
+  courses.some((a) => a.category === c.id)
 )
 
-export function albumsOf(categoryId: string): Album[] {
-  if (!categoryId || categoryId === ALL_CATEGORY_ID) return albums
-  return albums.filter((a) => a.category === categoryId)
+export function coursesOf(categoryId: string): Course[] {
+  if (!categoryId || categoryId === ALL_CATEGORY_ID) return courses
+  return courses.filter((c) => c.category === categoryId)
 }
 
-export function getAlbum(id: string): Album | undefined {
-  return albums.find((a) => a.id === id)
+export function getCourse(id: string): Course | undefined {
+  return courses.find((c) => c.id === id)
 }
 
-export function albumCategory(album: Album): Category | undefined {
-  return getCategory(album.category)
+export function courseCategory(course: Course): Category | undefined {
+  return getCategory(course.category)
 }
 
-export function cardsOf(album: Album): Card[] {
-  return album.cards
+export function stepsOf(course: Course): Step[] {
+  return course.steps
 }
 
-export function cardCount(album: Album): number {
-  return album.cards.length
+export function stepCount(course: Course): number {
+  return course.steps.length
 }
 
-export const totalAlbums = albums.length
-export const totalCards = albums.reduce((sum, a) => sum + a.cards.length, 0)
+/** 课程里带小问答的步骤数 */
+export function quizCount(course: Course): number {
+  return course.steps.filter((s) => s.quiz).length
+}
+
+export const totalCourses = courses.length
+export const totalSteps = courses.reduce((sum, c) => sum + c.steps.length, 0)

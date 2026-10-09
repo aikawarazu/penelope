@@ -1,18 +1,21 @@
-import type { Album } from '../types'
+import type { Course } from '../types'
 
 /**
- * 专辑：会长大的植物
- * 新增专辑 = 在 albums/ 下新建这样一个文件，自动被发现，无需改任何注册表。
+ * 课程：会长大的植物（图卡集）
+ * 新增课程 = 在 courses/ 下新建这样一个文件，自动被发现，无需改任何注册表。
  */
-const album: Album = {
+const course: Course = {
   id: 'plants',
   title: '会长大的植物',
   subtitle: '种子、小芽和大树',
   category: 'nature',
+  kind: 'gallery',
   cover: '🌱',
   accent: '#4caf7d',
-  order: 1,
-  cards: [
+  order: 2,
+  age: '3-5 岁',
+  intro: '一颗小小的种子，喝饱水、晒到太阳，会慢慢变成小芽、变成大树。我们一起看看它是怎么长的。',
+  steps: [
     {
       id: 'seed',
       title: '种子发芽',
@@ -56,7 +59,8 @@ const album: Album = {
         <circle cx="100" cy="53" r="9" fill="#ffd166"/>
       </svg>`
     }
-  ]
+  ],
+  summary: '种子发芽 → 长成小苗 → 变成大树 → 开出小花。植物就是这样慢慢长大的。'
 }
 
-export default album
+export default course

@@ -30,8 +30,8 @@ Vite + Vue 3 + TypeScript + vue-router + Pinia + vite-plugin-pwa
 ├─ 科普小课堂          ← 内容层：分类筛选 + 专辑网格 + 「查看全部」
 └─ 玩一玩              ← 模块层：工具卡片
 
-/m/science             分类 tabs + 全部专辑
-/m/science/album/<id>  单本专辑阅读器（可深链分享、记住读到第几张）
+/m/science             分类 tabs + 全部课程
+/m/science/course/<id> 单门课阅读器（引言 → 每一步 → 小结，可深链分享、记住学到第几步）
 /m/maze                走迷宫
 ```
 
@@ -42,31 +42,73 @@ Vite + Vue 3 + TypeScript + vue-router + Pinia + vite-plugin-pwa
 
 | 文件 | 职责 |
 | --- | --- |
-| `types.ts` | `Category` / `Album` / `Card` 数据结构 |
-| `categories.ts` | 分类表（自然 / 天气 / 动物 / 身体…） |
-| `albums/*.ts` | 每个专辑一个文件，**自动发现** |
+| `types.ts` | `Category` / `Course` / `Step` / `StepQuiz` 数据结构 |
+| `categories.ts` | 分类表（食物 / 自然 / 天气 / 动物 / 身体…） |
+| `courses/*.ts` | 每门课一个文件，**自动发现** |
 | `registry.ts` | `import.meta.glob` 扫描 + 按分类查询 + 全站计数 |
-| `progress.ts` | localStorage 阅读进度（读到第几张、看过哪些） |
+| `progress.ts` | localStorage 学习进度（学到第几步、看过哪些、问答作答） |
 
-**新增一本专辑**：在 `src/content/albums/` 下新建一个文件，默认导出 `Album` 即可，
-首页、专辑列表、计数全部自动更新，不需要改任何注册表。
+一门课的形态有三种：
+
+- **`kind: 'scene'` 场景动画课**（品质最高，讲过程）
+  不是「每步一张图」，而是**一幅连贯的大场景**（如 1200×560 的牧场全景）。
+  容器上加 `st1…stN` 状态类，由课程自带的 CSS 驱动动画：牛头摆动、咀嚼、气泡上浮、
+  血液快递、乳房出奶、加热炉点火……整节课是同一个连续的世界。
+  配套：自动播放 + 配音朗读 + 气泡字 + 完成徽章 + 「你知道吗」知识卡。
+  样板：`courses/milk.ts`（草是怎么变成牛奶的）。
+- **`kind: 'course'` 分步讲解课**：每步一张插画，有严格先后。
+- **`kind: 'gallery'` 图卡集**：同主题的一组插画，顺序不敏感（如「农场小伙伴」）。
+
+一门课的组成部分：`intro`（封面页）→ `steps[]`（每一步）→ `summary`（回顾）。
+每一步可带 `caption`（图注）、`quiz`（小问答）、`dur`（自动播放停留毫秒）、`pop`（气泡字）。
+课程还可带 `facts[]`（知识卡）与 `footer`。
+
+**新增一门课**：在 `src/content/courses/` 下新建一个文件，默认导出 `Course` 即可，
+首页、课程列表、计数全部自动更新，不需要改任何注册表。
 
 ```ts
-import type { Album } from '../types'
+import type { Course } from '../types'
 
-const album: Album = {
-  id: 'ocean',            // 路由 /m/science/album/ocean
-  title: '大海里',
-  subtitle: '鱼、贝壳和海浪',
-  category: 'nature',     // 对应 categories.ts 里的 id
-  cover: '🐟',
-  accent: '#3fa7ff',
-  order: 5,               // 展示顺序，小的在前
-  cards: [{ id: 'fish', title: '小鱼', text: '…', svg: '<svg …>' }]
+const course: Course = {
+  id: 'milk',                 // 路由 /m/science/course/milk
+  title: '草是怎么变成牛奶的',
+  subtitle: '一杯牛奶的六段旅行',
+  category: 'food',           // 对应 categories.ts 里的 id
+  kind: 'course',
+  cover: '🥛',
+  accent: '#22b8a6',
+  order: 1,                   // 展示顺序，小的在前
+  age: '3-6 岁',
+  intro: '每天早上喝的那杯牛奶，最开始是一片绿绿的草……',
+  steps: [
+    {
+      id: 'grass',
+      title: '1 · 一片青青的草地',
+      text: '牛奶的故事从草开始……',
+      caption: '小草把阳光和雨水，变成自己身体里的营养。',
+      svg: '<svg viewBox="0 0 200 120" …>',
+      quiz: { question: '牛奶最开始是从哪里来的？', options: ['…', '…', '…'], answer: 0, explain: '…' }
+    }
+  ],
+  summary: '草 → 奶牛吃草 → …… 原来每天那杯牛奶走了这么远的路。'
 }
 
-export default album
+export default course
 ```
+
+**插画约定**：
+- 图卡课：统一 `viewBox="0 0 200 120"`，同一门课保持同一套配色和主角。
+- 场景课：一幅大画面（建议 `viewBox="0 0 1200 560"`），所有步骤的元素都画进去，
+  靠 `st1…stN` 控制显隐与动画；动画样式写在 `scene.css` 里，只在课程打开时注入、离开时移除。
+
+**配音**：不打包音频文件（离线包会爆），改用浏览器自带的 `speechSynthesis` 朗读步骤文案，
+零字节、可静音。
+
+**场景课新增步骤的小抄**：
+1. 在场景 SVG 里加好这一步要显示／动起来的元素，给它们 id 或 class；
+2. 在 `scene.css` 里加 `.scene.stN #xxx { … }` / `@keyframes`；
+3. 在 `steps[]` 里加一项（title / text / dur / pop / quiz）。
+播放器、进度条、圆点、自动播放全部自动跟上。
 
 ### 模块层 `src/modules/`
 
@@ -85,8 +127,8 @@ export default album
 
 ```
 src/
-  content/            # 内容层：分类 / 专辑 / 卡片 / 阅读进度
-    albums/           # 一个文件一本专辑，自动发现
+  content/            # 内容层：分类 / 课程 / 步骤 / 学习进度
+    courses/          # 一个文件一门课，自动发现
   modules/
     types.ts          # ModuleManifest 接口
     registry.ts       # 自动发现模块（含实验室开关）
@@ -106,9 +148,8 @@ src/
 
 | id | 名称 | 形态 | 说明 |
 | --- | --- | --- | --- |
-| `science` | 科普小课堂 | 内容库 | 4 本专辑 13 张 SVG 卡片，分类筛选、记住阅读进度 |
-| `maze` | 走迷宫 | 工具 | 3 种算法 + 5 档难度，导出 PDF（含答案页）/ PNG / SVG |
-| `jigsaw` | 拼图 | 工具 | 8 种图案 × 6 种外形 × 4~25 片；在线拖拽拼图 + PDF 打印模板（含涂色版）+ SVG 刀路 |
+| `science` | 科普小课堂 | 内容库 | 5 门课 19 个步骤：分步讲解 + 图注 + 小问答，分类筛选、记住学到第几步 |
+| `maze` | 走迷宫 | 工具 | **可以在线走**：方向键 / 屏幕按钮 / 滑动 / 点相邻格；也能导出 PDF（含答案页）/ PNG / SVG 打印 |
 
 ### 开发中（`src/modules-lab/`，暂未上线）
 
@@ -118,6 +159,7 @@ src/
 | `find` | 图形找找看 | 目标图形横 / 竖 / 斜藏进干扰图形里 |
 | `nonogram` | 数织画 | 12 个内置像素图案或手绘，自动生成行列线索 |
 | `sudoku` | 图形数独 | 4×4 / 6×6 / 9×9 + 4 档难度，保证唯一解 |
+| `jigsaw` | 拼图 | 已从站点下线（交互不好用），代码保留待处理 |
 | `math` / `logic` / `maze-classic` | 早期小模块 | 数一数 / 分分类 / 经典走迷宫小游戏 |
 
 > 这几个模块代码已完成并跑过测试，只是按当前产品范围先藏着；

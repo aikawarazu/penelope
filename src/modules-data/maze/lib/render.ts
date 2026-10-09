@@ -1,4 +1,5 @@
 import { solutionPoints, wallSegments } from './geometry'
+import { withAlpha } from '@/lib/puzzle/canvas2d'
 import { PALETTES, type Maze, type PaletteId } from './types'
 
 export interface MazeStyle {
@@ -14,6 +15,8 @@ export interface MazeStyle {
   solutionWidth: number
   startColor: string
   endColor: string
+  /** 在线玩的小球配色 */
+  ballColor: string
   /** true = 圆角接头；false = 直角 */
   round: boolean
   /** 是否画起终点圆点 */
@@ -54,6 +57,7 @@ export function makeStyle(input: StyleInput): MazeStyle {
     solutionWidth: Math.max(1, cell * 0.22),
     startColor: palette.start,
     endColor: palette.end,
+    ballColor: palette.ball,
     round: input.round,
     markers: input.markers,
     showSolution: input.showSolution
@@ -132,4 +136,65 @@ export function drawMaze(
   }
 
   ctx.restore()
+}
+
+export interface MazePlayState {
+  /** 小球当前所在格子下标 */
+  cell: number
+  /** 已经走过的格子 */
+  trail: Set<number>
+  solution: number[]
+  /** 是否把答案路径淡淡地画出来（提示） */
+  showHint: boolean
+}
+
+/** 在线玩：在迷宫上画出走过的痕迹和那颗小球 */
+export function drawMazePlay(
+  ctx: CanvasRenderingContext2D,
+  maze: Maze,
+  style: MazeStyle,
+  state: MazePlayState
+): void {
+  drawMaze(ctx, maze, state.solution, { ...style, showSolution: state.showHint })
+
+  const { margin, cell } = layoutFor(maze, style)
+  ctx.save()
+  ctx.translate(margin, margin)
+
+  // 走过的痕迹
+  if (state.trail.size) {
+    ctx.fillStyle = withAlpha(style.ballColor, 0.22)
+    for (const idx of state.trail) {
+      const c = idx % maze.cols
+      const r = (idx / maze.cols) | 0
+      ctx.fillRect(c * cell + cell * 0.2, r * cell + cell * 0.2, cell * 0.6, cell * 0.6)
+    }
+  }
+
+  // 小球
+  const px = ((state.cell % maze.cols) + 0.5) * cell
+  const py = (((state.cell / maze.cols) | 0) + 0.5) * cell
+  const rad = cell * 0.32
+  ctx.beginPath()
+  ctx.arc(px, py, rad, 0, Math.PI * 2)
+  ctx.fillStyle = style.ballColor
+  ctx.fill()
+  ctx.lineWidth = Math.max(1.5, cell * 0.06)
+  ctx.strokeStyle = '#ffffff'
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.arc(px - rad * 0.3, py - rad * 0.32, rad * 0.28, 0, Math.PI * 2)
+  ctx.fillStyle = withAlpha('#ffffff', 0.75)
+  ctx.fill()
+
+  ctx.restore()
+}
+
+/** 画布逻辑坐标 → 格子下标，-1 表示点在网格外 */
+export function hitCell(maze: Maze, style: MazeStyle, x: number, y: number): number {
+  const { margin, cell } = layoutFor(maze, style)
+  const c = Math.floor((x - margin) / cell)
+  const r = Math.floor((y - margin) / cell)
+  if (c < 0 || c >= maze.cols || r < 0 || r >= maze.rows) return -1
+  return r * maze.cols + c
 }

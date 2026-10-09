@@ -19,6 +19,7 @@ import {
 import { generateMaze, type MazeOptions, type MazeResult } from './lib/generate'
 import { countDeadEnds, solveMaze } from './lib/solve'
 import { drawMaze, layoutFor, makeStyle, type StyleInput } from './lib/render'
+import MazePlay from './MazePlay.vue'
 import {
   downloadBlob,
   exportPdf,
@@ -43,6 +44,9 @@ const paper = ref<PaperId>('A4')
 const orientation = ref<OrientationId>('auto')
 const seed = ref(randomSeed())
 const showSolution = ref(false)
+
+/** 走一走 / 打印稿 */
+const mode = ref<'play' | 'print'>('play')
 
 const braid = computed(
   () => DIFFICULTIES.find((d) => d.id === difficulty.value)?.braid ?? 0.3
@@ -172,6 +176,21 @@ const previewStyle = computed(() => {
   })
 })
 
+/** 在线玩时格子放大一点，方便小朋友看清和滑动 */
+const playStyle = computed(() => {
+  const m = maze.value
+  const longest = m ? Math.max(m.cols, m.rows) : 20
+  const cell = Math.max(16, Math.min(44, Math.floor(620 / (longest + 1))))
+  return makeStyle({
+    palette: palette.value,
+    stroke: stroke.value,
+    round: corner.value === 'round',
+    markers: true,
+    showSolution: false,
+    cell
+  })
+})
+
 const styleInput = computed<StyleInput>(() => ({
   palette: palette.value,
   stroke: stroke.value,
@@ -196,6 +215,11 @@ function paint() {
 }
 
 watch([maze, solution, previewStyle], () => paint(), { flush: 'post' })
+
+// 切回「打印稿」时画布才刚挂载，需要补一次重绘
+watch(mode, () => {
+  if (mode.value === 'print') paint()
+}, { flush: 'post' })
 
 // 结构性参数一变就重新生成；配色/线宽这类只影响外观的参数走上面的重绘
 watch([cols, rows, algorithm, braid, placement, seed], () => {
@@ -382,36 +406,51 @@ const solutionSteps = computed(() => Math.max(0, solution.value.length - 1))
     </section>
 
     <section class="stage">
-      <div class="canvas-box">
-        <canvas ref="canvasRef" class="preview" />
-        <div v-if="busy" class="mask">生成中…</div>
+      <div class="seg tabs">
+        <button :class="{ on: mode === 'play' }" @click="mode = 'play'">走一走</button>
+        <button :class="{ on: mode === 'print' }" @click="mode = 'print'">打印稿</button>
       </div>
 
-      <label class="check solution">
-        <input v-model="showSolution" type="checkbox" />
-        <span>显示答案路径</span>
-      </label>
+      <div v-if="busy" class="mask">生成中…</div>
 
-      <div class="stats">
-        <span><b>{{ maze ? maze.cols : 0 }}×{{ maze ? maze.rows : 0 }}</b>格</span>
-        <span><b>{{ deadEnds }}</b> 死角</span>
-        <span>最短 <b>{{ solutionSteps }}</b> 步</span>
-        <span>生成 <b>{{ elapsed.toFixed(1) }}</b> ms</span>
-      </div>
+      <MazePlay
+        v-if="mode === 'play'"
+        :maze="maze"
+        :solution="solution"
+        :style="playStyle"
+      />
 
-      <div class="actions">
-        <button class="big-btn" :disabled="busy" @click="regenerate">换一张</button>
-        <button class="ghost" :disabled="busy || exporting === 'pdf'" @click="onPdf">
-          {{ exporting === 'pdf' ? '导出中…' : 'PDF（含答案页）' }}
-        </button>
-        <button class="ghost" :disabled="busy || exporting === 'png'" @click="onPng">
-          {{ exporting === 'png' ? '导出中…' : 'PNG' }}
-        </button>
-        <button class="ghost" :disabled="busy" @click="onSvg">SVG</button>
-      </div>
+      <template v-else>
+        <div class="canvas-box">
+          <canvas ref="canvasRef" class="preview" />
+        </div>
 
-      <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
-      <p class="note">PDF 第 1 页是题目，第 2 页是答案；PNG / SVG 按上方「显示答案路径」开关导出。</p>
+        <label class="check solution">
+          <input v-model="showSolution" type="checkbox" />
+          <span>显示答案路径</span>
+        </label>
+
+        <div class="stats">
+          <span><b>{{ maze ? maze.cols : 0 }}×{{ maze ? maze.rows : 0 }}</b>格</span>
+          <span><b>{{ deadEnds }}</b> 死角</span>
+          <span>最短 <b>{{ solutionSteps }}</b> 步</span>
+          <span>生成 <b>{{ elapsed.toFixed(1) }}</b> ms</span>
+        </div>
+
+        <div class="actions">
+          <button class="big-btn" :disabled="busy" @click="regenerate">换一张</button>
+          <button class="ghost" :disabled="busy || exporting === 'pdf'" @click="onPdf">
+            {{ exporting === 'pdf' ? '导出中…' : 'PDF（含答案页）' }}
+          </button>
+          <button class="ghost" :disabled="busy || exporting === 'png'" @click="onPng">
+            {{ exporting === 'png' ? '导出中…' : 'PNG' }}
+          </button>
+          <button class="ghost" :disabled="busy" @click="onSvg">SVG</button>
+        </div>
+
+        <p v-if="errorMessage" class="error">{{ errorMessage }}</p>
+        <p class="note">PDF 第 1 页是题目，第 2 页是答案；PNG / SVG 按上方「显示答案路径」开关导出。</p>
+      </template>
     </section>
   </div>
 </template>
@@ -434,6 +473,17 @@ const solutionSteps = computed(() => Math.max(0, solution.value.length - 1))
 
 .stage {
   text-align: center;
+  position: relative;
+}
+
+.tabs {
+  margin-bottom: 14px;
+}
+
+.tabs button {
+  min-width: 88px;
+  font-size: 14px;
+  padding: 9px 10px;
 }
 
 /* ---------- 控制面板 ---------- */
@@ -569,11 +619,12 @@ const solutionSteps = computed(() => Math.max(0, solution.value.length - 1))
   inset: 0;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.72);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.78);
+  border-radius: 22px;
   font-size: 14px;
   color: var(--accent);
   font-weight: 600;
+  z-index: 2;
 }
 
 .solution {
